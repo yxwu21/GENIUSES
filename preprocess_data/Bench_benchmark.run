@@ -1,0 +1,44 @@
+#!/bin/csh -fv
+
+set inpcrd=$1
+set prmtop=$2
+set case=$3
+
+if (( $inpcrd == "" ) || ( $prmtop == "" )) then
+	echo "Error: Please specify inpcrd and prmtop files as follows:"
+	echo ""
+	echo "./Run.testCase.min database/xx.incrd database/xx.prmtop xx"
+	echo ""
+	exit 1
+endif
+
+if( ! $?DO_PARALLEL ) then
+        setenv DO_PARALLEL ""
+else
+    echo "This test not set up for parallel"
+    echo " cannot run in parallel with pbsa"
+    exit 0
+endif
+
+set TESTsander = "/home/yxwu/install_test_mlses/test-install.training/bin/pbsa.cuda"
+set output = $case.ipb2.out.bench
+
+echo "Now running case $case with ipb2 and grid 0.95 ..."
+cat > min.in <<EOF
+ test of pbsa
+ &cntrl 
+    ntx=1, imin=1, ipb=2, inp=0
+ /
+ &pb
+    npbverb=1, istrng=0,
+    epsout=80.0, epsin=1.0, dprob=1.4, radiopt=0, sasopt=0,
+    fillratio=1.5, nfocus=1, space=0.95, mlses_bench=1,
+    accept=0.000001, maxitn=10000, solvopt=3,
+    npbopt=0, bcopt=6,
+    eneopt=1, frcopt=0, cutnb=15, cutsa=8, cutfd=7
+ /   
+EOF
+
+$DO_PARALLEL $TESTsander -O -i min.in -o $output -c $inpcrd -p $prmtop
+/bin/rm -f min.in restrt mdinfo
+
